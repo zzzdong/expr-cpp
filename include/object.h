@@ -20,6 +20,13 @@ enum class ValueKind {
     NativeFunction,
 };
 
+std::string value_kind_str(const ValueKind kind);
+
+// 新增流输出操作符重载
+inline std::ostream& operator<<(std::ostream& os, ValueKind kind) {
+    return os << value_kind_str(kind);
+}
+
 enum class Comparison {
     Equal,
     Less,
@@ -163,6 +170,13 @@ public:
     operator int64_t() const;
     operator double() const;
     operator std::string() const;
+    bool operator==(const Value& other) const {
+        return this->m_obj->compare(other.m_obj) == Comparison::Equal;
+    }
+
+    bool operator!=(const Value& other) const {
+        return !(*this == other);
+    }
 
     ValueKind kind() const;
     std::string inspect();

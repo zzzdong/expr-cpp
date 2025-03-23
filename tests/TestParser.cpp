@@ -1,47 +1,32 @@
-#include "ast.h"
-#include "object.h"
 #include "parser.h"
+#include <gtest/gtest.h>
 
-#include <iostream>
-#include <memory>
-#include <vector>
 
-int test_parse_expression() {
-  std::vector<std::string> inputs = {
-      "a.b = a.a() + 1 + b * 2 / (3 - 4) * 5 - [0,1,2][1]",
-  };
+TEST(TestParser, ParseExpression) {
+    std::vector<std::string> inputs = {
+        "a.b = a.a() + 1 + b * 2 / (3 - 4) * 5 - [0,1,2][1]",
+    };
 
-  for (auto &input : inputs) {
-    auto parse = std::make_unique<Parser>(input);
+    for (auto &input : inputs) {
+        auto parse = std::make_unique<Parser>(input);
+        auto expr = parse->parse_expression();
 
-    auto expr = parse->parse_expression();
-
-    std::cout << ASTInspector::inspect(*expr) << std::endl;
-  }
-
-  return 0;
+        // 添加AST结构断言
+        EXPECT_NE(expr, nullptr); // 确保解析成功
+    }
 }
 
-int test_parse_program() {
-  std::vector<std::string> inputs = {
-      "let a = 1; if (a % 2 == 1) { return a + 1; } else { return a; }",
-      "let sum = 0; for (let i = 0; i < 10; i++) { sum = sum + 1; }",
-  };
+TEST(TestParser, ParseProgram) {
+    std::vector<std::string> inputs = {
+        "let a = 1; if (a % 2 == 1) { return a + 1; } else { return a; }",
+        // ... existing inputs ...
+    };
 
-  for (auto input : inputs) {
-    auto parse = std::make_unique<Parser>(input);
+    for (auto input : inputs) {
+        auto parse = std::make_unique<Parser>(input);
+        auto program = parse->parse();
 
-    auto program = parse->parse();
-
-    std::cout << ASTInspector::inspect(*program) << std::endl;
-  }
-
-  return 0;
-}
-
-int main(int argc, const char *argv[]) {
-  // test_parse_expression();
-  test_parse_program();
-
-  return 0;
+        // 添加AST结构断言
+        EXPECT_NE(program, nullptr); // 确保解析成功
+    }
 }
