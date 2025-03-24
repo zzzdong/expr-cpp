@@ -71,30 +71,22 @@ std::string ASTInspector::inspect(ASTNode& node)
     }
     case ASTNode::Kind::ReturnStmt: {
         auto& return_stmt = dynamic_cast<ReturnStatement&>(node);
-        return std::format("return {0};",
-            return_stmt.value() != nullptr
-                ? ASTInspector::inspect(*return_stmt.value())
-                : "nullptr");
+        return std::format(
+            "return {0};", return_stmt.value() != nullptr ? ASTInspector::inspect(*return_stmt.value()) : "nullptr");
     }
     case ASTNode::Kind::LetStmt: {
         LetStatement& let_stmt = dynamic_cast<LetStatement&>(node);
 
         return std::format("LetStmt(name: {0}, value: {1})", let_stmt.name(),
-            let_stmt.value() != nullptr
-                ? ASTInspector::inspect(*let_stmt.value())
-                : "nullptr");
+            let_stmt.value() != nullptr ? ASTInspector::inspect(*let_stmt.value()) : "nullptr");
     }
     case ASTNode::Kind::ForStmt: {
         ForStatement& for_stmt = dynamic_cast<ForStatement&>(node);
 
-        return std::format(
-            "ForStmt(initializer: {0}, condition: {1}, increment: {2}, body: {3})",
-            for_stmt.initializer() ? ASTInspector::inspect(*for_stmt.initializer())
-                                   : "nullptr",
-            for_stmt.condition() ? ASTInspector::inspect(*for_stmt.condition())
-                                 : "nullptr",
-            for_stmt.increment() ? ASTInspector::inspect(*for_stmt.increment())
-                                 : "nullptr",
+        return std::format("ForStmt(initializer: {0}, condition: {1}, increment: {2}, body: {3})",
+            for_stmt.initializer() ? ASTInspector::inspect(*for_stmt.initializer()) : "nullptr",
+            for_stmt.condition() ? ASTInspector::inspect(*for_stmt.condition()) : "nullptr",
+            for_stmt.increment() ? ASTInspector::inspect(*for_stmt.increment()) : "nullptr",
             ASTInspector::inspect(for_stmt.body()));
     }
     case ASTNode::Kind::BreakStmt:
@@ -115,16 +107,12 @@ std::string ASTInspector::inspect(ASTNode& node)
         IfStatement& if_stmt = dynamic_cast<IfStatement&>(node);
         return std::format("IfStmt(condition: {0}, then_branch: {1}, else_branch: "
                            "{2})",
-            ASTInspector::inspect(if_stmt.condition()),
-            ASTInspector::inspect(if_stmt.then_branch()),
-            if_stmt.else_branch()
-                ? ASTInspector::inspect(*if_stmt.else_branch())
-                : "nullptr");
+            ASTInspector::inspect(if_stmt.condition()), ASTInspector::inspect(if_stmt.then_branch()),
+            if_stmt.else_branch() ? ASTInspector::inspect(*if_stmt.else_branch()) : "nullptr");
     }
     case ASTNode::Kind::ExprStmt: {
         ExpressionStatement& expr_stmt = dynamic_cast<ExpressionStatement&>(node);
-        return std::format("ExpressionStmt(expr: {0})",
-            ASTInspector::inspect(expr_stmt.expr()));
+        return std::format("ExpressionStmt(expr: {0})", ASTInspector::inspect(expr_stmt.expr()));
     }
     case ASTNode::Kind::FnStmt: {
         FnStatement& fn_stmt = dynamic_cast<FnStatement&>(node);
@@ -134,25 +122,22 @@ std::string ASTInspector::inspect(ASTNode& node)
             ss << std::format("{0}, ", param);
         }
 
-        return std::format("FnStmt(name: {0}, params: [{1}], body: {2})",
-            fn_stmt.name(), ss.str(),
+        return std::format("FnStmt(name: {0}, params: [{1}], body: {2})", fn_stmt.name(), ss.str(),
             ASTInspector::inspect(fn_stmt.body()));
     }
     case ASTNode::Kind::BinaryExpr: {
         BinaryExpression& bin = dynamic_cast<BinaryExpression&>(node);
-        return std::format("BinaryExpression(op: {0}, left: {1}, right: {2})",
-            operator_str(bin.op()), inspect(bin.left()),
-            inspect(bin.right()));
+        return std::format("BinaryExpression(op: {0}, left: {1}, right: {2})", operator_str(bin.op()),
+            inspect(bin.left()), inspect(bin.right()));
     }
     case ASTNode::Kind::PrefixExpr: {
         PrefixExpression& prefix = dynamic_cast<PrefixExpression&>(node);
-        return std::format("PrefixExpression(op: {0}, expr: {1})",
-            operator_str(prefix.op()), inspect(prefix.expr()));
+        return std::format("PrefixExpression(op: {0}, expr: {1})", operator_str(prefix.op()), inspect(prefix.expr()));
     }
     case ASTNode::Kind::PostfixExpr: {
         PostfixExpression& postfix = dynamic_cast<PostfixExpression&>(node);
-        return std::format("PostfixExpression(op: {0}, expr: {1})",
-            operator_str(postfix.op()), inspect(postfix.expr()));
+        return std::format(
+            "PostfixExpression(op: {0}, expr: {1})", operator_str(postfix.op()), inspect(postfix.expr()));
     }
     case ASTNode::Kind::LiteralExpr: {
         LiteralExpression& lit = dynamic_cast<LiteralExpression&>(node);
@@ -170,8 +155,8 @@ std::string ASTInspector::inspect(ASTNode& node)
             IntegerLiteral& int_lit = dynamic_cast<IntegerLiteral&>(lit);
             return std::format("IntegerLiteral(value: {0})", int_lit.value());
         }
-        case LiteralKind::Undefined: {
-            UndefinedLiteral& null_lit = dynamic_cast<UndefinedLiteral&>(lit);
+        case LiteralKind::Null: {
+            NullLiteral& null_lit = dynamic_cast<NullLiteral&>(lit);
             return std::format("NullLiteral()");
         }
         case LiteralKind::String: {
@@ -197,9 +182,8 @@ std::string ASTInspector::inspect(ASTNode& node)
     case ASTNode::Kind::IndexExpr: {
         IndexExpression& index_expr = dynamic_cast<IndexExpression&>(node);
 
-        return std::format("IndexExpr(object: {0}, index: {1})",
-            inspect(index_expr.object()),
-            inspect(index_expr.index()));
+        return std::format(
+            "IndexExpr(object: {0}, index: {1})", inspect(index_expr.object()), inspect(index_expr.index()));
     }
     case ASTNode::Kind::CallExpr: {
         CallExpression& call_expr = dynamic_cast<CallExpression&>(node);
@@ -208,9 +192,7 @@ std::string ASTInspector::inspect(ASTNode& node)
             ss << inspect(*arg) << ", ";
         }
 
-        return std::format("CallExpr(callee: {0}, args: [{1}])",
-            inspect(call_expr.callee()),
-            ss.str());
+        return std::format("CallExpr(callee: {0}, args: [{1}])", inspect(call_expr.callee()), ss.str());
     }
 
     default:

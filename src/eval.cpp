@@ -37,7 +37,7 @@ Value Evaluator::eval()
         }
     }
 
-    return Value(std::make_shared<Undefined>());
+    return Value(std::make_shared<Null>());
 }
 
 ControlFlow Evaluator::eval(Statement& statement)
@@ -62,15 +62,13 @@ ControlFlow Evaluator::eval(Statement& statement)
     case ASTNode::Kind::ExprStmt:
         return eval(dynamic_cast<ExpressionStatement&>(statement));
     default:
-        throw std::runtime_error(std::format("unimplemented eval for {}",
-            ASTInspector::inspect(statement)));
+        throw std::runtime_error(std::format("unimplemented eval for {}", ASTInspector::inspect(statement)));
     }
 }
 
 ControlFlow Evaluator::eval(ReturnStatement& statement)
 {
-    auto value = statement.value() ? eval(*statement.value())
-                                   : Value(std::make_shared<Undefined>());
+    auto value = statement.value() ? eval(*statement.value()) : Value(std::make_shared<Null>());
     return ControlFlow(ControlFlow::Kind::Return, value);
 }
 
@@ -79,8 +77,7 @@ ControlFlow Evaluator::eval(LetStatement& statement)
     if (statement.value() != nullptr) {
         this->m_context.insert_variable(statement.name(), eval(*statement.value()));
     } else {
-        this->m_context.insert_variable(statement.name(),
-            Value(std::make_shared<Undefined>()));
+        this->m_context.insert_variable(statement.name(), Value(std::make_shared<Null>()));
     }
 
     return ControlFlow(ControlFlow::Kind::None);
@@ -90,8 +87,7 @@ ControlFlow Evaluator::eval(IfStatement& statement)
 {
     auto condition = eval(statement.condition());
     if (condition.kind() != ValueKind::Boolean) {
-        throw InvalidOperate(Operator::Equals, ValueKind::Boolean,
-            condition.kind());
+        throw InvalidOperate(Operator::Equals, ValueKind::Boolean, condition.kind());
     }
 
     if (condition.as_boolean()) {
@@ -172,15 +168,14 @@ Value Evaluator::eval(Expression& expression)
     case ASTNode::Kind::CallExpr:
         return eval(dynamic_cast<CallExpression&>(expression));
     default:
-        throw std::runtime_error(std::format("unimplemented for eval: {}",
-            ASTInspector::inspect(expression)));
+        throw std::runtime_error(std::format("unimplemented for eval: {}", ASTInspector::inspect(expression)));
     }
 }
 
 Value Evaluator::eval(LiteralExpression& literal)
 {
     switch (literal.literal_kind()) {
-    case LiteralKind::Undefined: {
+    case LiteralKind::Null: {
         return Value();
     }
     case LiteralKind::Boolean: {
@@ -206,10 +201,7 @@ Value Evaluator::eval(LiteralExpression& literal)
     }
 }
 
-Value Evaluator::eval(VariableExpression& expression)
-{
-    return m_context.get_variable(expression.name());
-}
+Value Evaluator::eval(VariableExpression& expression) { return m_context.get_variable(expression.name()); }
 
 Value Evaluator::eval(BinaryExpression& expression)
 {
@@ -260,8 +252,7 @@ Value Evaluator::eval(BinaryExpression& expression)
         }
         default:
             throw InvalidOperate(
-                std::format("Invalid assignment target, {}",
-                    ASTInspector::inspect(expression.left())));
+                std::format("Invalid assignment target, {}", ASTInspector::inspect(expression.left())));
         }
     }
     default:
@@ -348,7 +339,7 @@ Value Evaluator::eval(CallExpression& expression)
         return eval_call(*fn_stmt, args);
     }
     case ValueKind::NativeFunction: {
-        
+
         std::vector<Value> args;
         for (auto& arg : expression.args()) {
             args.push_back(eval(*arg));

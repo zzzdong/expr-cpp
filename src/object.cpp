@@ -1,15 +1,14 @@
 #include "object.h"
 #include "ast.h"
+
 #include <cstdint>
-#include <iostream>
 #include <memory>
-#include <typeinfo>
 
 std::string value_kind_str(ValueKind kind)
 {
     switch (kind) {
-    case ValueKind::Undefined:
-        return "Undefined";
+    case ValueKind::Null:
+        return "null";
     case ValueKind::Boolean:
         return "Boolean";
     case ValueKind::Integer:
@@ -31,68 +30,35 @@ std::string value_kind_str(ValueKind kind)
     }
 }
 
-Value Object::add(const Value& other)
-{
-    throw InvalidOperate(Operator::Add, this->kind(), other.kind());
-}
+Value Object::add(const Value& other) { throw InvalidOperate(Operator::Add, this->kind(), other.kind()); }
 
-Value Object::sub(const Value& other)
-{
-    throw InvalidOperate(Operator::Subtract, this->kind(), other.kind());
-}
+Value Object::sub(const Value& other) { throw InvalidOperate(Operator::Subtract, this->kind(), other.kind()); }
 
-Value Object::mul(const Value& other)
-{
-    throw InvalidOperate(Operator::Multiply, this->kind(), other.kind());
-}
+Value Object::mul(const Value& other) { throw InvalidOperate(Operator::Multiply, this->kind(), other.kind()); }
 
-Value Object::div(const Value& other)
-{
-    throw InvalidOperate(Operator::Divide, this->kind(), other.kind());
-}
+Value Object::div(const Value& other) { throw InvalidOperate(Operator::Divide, this->kind(), other.kind()); }
 
-Value Object::mod(const Value& other)
-{
-    throw InvalidOperate(Operator::Modulo, this->kind(), other.kind());
-}
+Value Object::mod(const Value& other) { throw InvalidOperate(Operator::Modulo, this->kind(), other.kind()); }
 
-Comparison Object::compare(const Value& other)
-{
-    throw InvalidOperate(Operator::Equals, this->kind(), other.kind());
-}
+Comparison Object::compare(const Value& other) { throw InvalidOperate(Operator::Equals, this->kind(), other.kind()); }
 
-Value Object::index(const Value& index)
-{
-    throw std::runtime_error("Not implemented");
-}
+Value Object::index(const Value& index) { throw std::runtime_error("Not implemented"); }
 
-Value Object::call(Value args...)
-{
-    throw std::runtime_error("Not implemented");
-}
+Value Object::call(Value args...) { throw std::runtime_error("Not implemented"); }
 
-Value Object::get_attr(std::string name)
-{
-    throw std::runtime_error("Not implemented");
-}
+Value Object::get_attr(std::string name) { throw std::runtime_error("Not implemented"); }
 
-void Object::set_attr(std::string name, Value value)
-{
-    throw std::runtime_error("Not implemented");
-}
+void Object::set_attr(std::string name, Value value) { throw std::runtime_error("Not implemented"); }
 
-Value Object::method(std::string name, std::vector<const Value>& args)
-{
-    throw std::runtime_error("Not implemented");
-}
+Value Object::method(std::string name, std::vector<const Value>& args) { throw std::runtime_error("Not implemented"); }
 
-template <typename T, typename... Arguments> Value NativeFunction<T, Arguments...>::call(Value args...) {
+template <typename T, typename... Arguments> Value NativeFunction<T, Arguments...>::call(Value args...)
+{
     return Value(m_func(args));
 }
 
-
 Value::Value()
-    : m_obj(std::make_shared<Undefined>())
+    : m_obj(std::make_shared<Null>())
 {
 }
 
@@ -127,70 +93,34 @@ Value Value::operator=(const Value& other)
     return *this;
 }
 
-Value::operator bool() const
-{
-    return std::dynamic_pointer_cast<Boolean>(this->m_obj)->value();
-}
+Value::operator bool() const { return std::dynamic_pointer_cast<Boolean>(this->m_obj)->value(); }
 
-Value::operator int64_t() const
-{
-    return std::dynamic_pointer_cast<Integer>(this->m_obj)->value();
-}
+Value::operator int64_t() const { return std::dynamic_pointer_cast<Integer>(this->m_obj)->value(); }
 
-Value::operator double() const
-{
-    return std::dynamic_pointer_cast<Float>(this->m_obj)->value();
-}
+Value::operator double() const { return std::dynamic_pointer_cast<Float>(this->m_obj)->value(); }
 
-Value::operator std::string() const
-{
-    return std::dynamic_pointer_cast<String>(this->m_obj)->value();
-}
+Value::operator std::string() const { return std::dynamic_pointer_cast<String>(this->m_obj)->value(); }
 
-void Value::set(Value value)
-{
-    m_obj = value.m_obj;
-}
+void Value::set(Value value) { m_obj = value.m_obj; }
 
-ValueKind Value::kind() const
-{
-    return m_obj->kind();
-}
+ValueKind Value::kind() const { return m_obj->kind(); }
 
-std::string Value::inspect()
-{
-    return m_obj->inspect();
-}
+std::string Value::inspect() { return m_obj->inspect(); }
 
-bool& Value::as_boolean() const
-{
-    return std::dynamic_pointer_cast<Boolean>(this->m_obj)->value();
-}
+bool& Value::as_boolean() const { return std::dynamic_pointer_cast<Boolean>(this->m_obj)->value(); }
 
-int64_t& Value::as_integer() const
-{
-    return std::dynamic_pointer_cast<Integer>(this->m_obj)->value();
-}
+int64_t& Value::as_integer() const { return std::dynamic_pointer_cast<Integer>(this->m_obj)->value(); }
 
-double& Value::as_float() const
-{
-    return std::dynamic_pointer_cast<Float>(this->m_obj)->value();
-}
+double& Value::as_float() const { return std::dynamic_pointer_cast<Float>(this->m_obj)->value(); }
 
-std::string& Value::as_string() const
-{
-    return std::dynamic_pointer_cast<String>(this->m_obj)->value();
-}
+std::string& Value::as_string() const { return std::dynamic_pointer_cast<String>(this->m_obj)->value(); }
 
-UserFunction& Value::as_user_function() const
-{
-    return *std::dynamic_pointer_cast<UserFunction>(this->m_obj);
-}
+UserFunction& Value::as_user_function() const { return *std::dynamic_pointer_cast<UserFunction>(this->m_obj); }
 
-Comparison Undefined::compare(const Value& other)
+Comparison Null::compare(const Value& other)
 {
     switch (other.kind()) {
-    case ValueKind::Undefined:
+    case ValueKind::Null:
         return Comparison::Equal;
     default:
         throw InvalidOperate(Operator::Equals, this->kind(), other.kind());

@@ -1,3 +1,5 @@
+#pragma once
+
 #include "ast.h"
 #include <cstdint>
 #include <ctime>
@@ -9,7 +11,7 @@
 #include <vector>
 
 enum class ValueKind {
-    Undefined,
+    Null,
     Boolean,
     Integer,
     Float,
@@ -23,9 +25,7 @@ enum class ValueKind {
 std::string value_kind_str(const ValueKind kind);
 
 // 新增流输出操作符重载
-inline std::ostream& operator<<(std::ostream& os, ValueKind kind) {
-    return os << value_kind_str(kind);
-}
+inline std::ostream& operator<<(std::ostream& os, ValueKind kind) { return os << value_kind_str(kind); }
 
 enum class Comparison {
     Equal,
@@ -43,22 +43,20 @@ public:
     }
 
     InvalidOperate(Operator op, ValueKind obj)
-        : invalid_argument(std::format("invalid {} unary operation for {}",
-              operator_str(op), value_kind_str(obj)))
+        : invalid_argument(std::format("invalid {} unary operation for {}", operator_str(op), value_kind_str(obj)))
     {
     }
 
     InvalidOperate(Operator op, ValueKind lhs, ValueKind rhs)
-        : invalid_argument(std::format("invalid {} operation for {} with {}",
-              operator_str(op), value_kind_str(lhs),
-              value_kind_str(rhs)))
+        : invalid_argument(std::format(
+              "invalid {} operation for {} with {}", operator_str(op), value_kind_str(lhs), value_kind_str(rhs)))
     {
     }
 };
 
 class Value;
 
-class Undefined;
+class Null;
 
 class Boolean;
 
@@ -100,8 +98,7 @@ public:
     virtual Value method(std::string name, std::vector<const Value>& args);
 };
 
-template <typename T, typename... Arguments>
-class NativeFunction : public Object {
+template <typename T, typename... Arguments> class NativeFunction : public Object {
 public:
     NativeFunction(std::string name, std::function<T(Arguments...)> func)
         : m_name(name)
@@ -113,10 +110,7 @@ public:
 
     std::string name() { return m_name; }
 
-    std::string inspect() override
-    {
-        return std::format("<native fn {}>", this->name());
-    }
+    std::string inspect() override { return std::format("<native fn {}>", this->name()); }
 
     Value call(Value args...) override;
 
@@ -170,13 +164,9 @@ public:
     operator int64_t() const;
     operator double() const;
     operator std::string() const;
-    bool operator==(const Value& other) const {
-        return this->m_obj->compare(other.m_obj) == Comparison::Equal;
-    }
+    bool operator==(const Value& other) const { return this->m_obj->compare(other.m_obj) == Comparison::Equal; }
 
-    bool operator!=(const Value& other) const {
-        return !(*this == other);
-    }
+    bool operator!=(const Value& other) const { return !(*this == other); }
 
     ValueKind kind() const;
     std::string inspect();
@@ -187,11 +177,9 @@ public:
     std::string& as_string() const;
     UserFunction& as_user_function() const;
 
-    template <typename T, typename... Arguments>
-    NativeFunction<T, Arguments...>& as_native_function() const
+    template <typename T, typename... Arguments> NativeFunction<T, Arguments...>& as_native_function() const
     {
-        return *std::dynamic_pointer_cast<NativeFunction<T, Arguments...>>(
-            this->obj());
+        return *std::dynamic_pointer_cast<NativeFunction<T, Arguments...>>(this->obj());
     }
 
     std::shared_ptr<Object> obj() const { return m_obj; }
@@ -202,10 +190,10 @@ private:
     std::shared_ptr<Object> m_obj;
 };
 
-class Undefined : public Object {
+class Null : public Object {
 public:
-    Undefined() = default;
-    ValueKind kind() override { return ValueKind::Undefined; }
+    Null() = default;
+    ValueKind kind() override { return ValueKind::Null; }
 
     Comparison compare(const Value& other) override;
 };
@@ -283,10 +271,7 @@ public:
     Comparison compare(const Value& other) override;
 
     ValueKind kind() override { return ValueKind::String; }
-    std::string inspect() override
-    {
-        return std::format("\"{}\"", this->value());
-    }
+    std::string inspect() override { return std::format("\"{}\"", this->value()); }
 
 private:
     std::string m_value;
@@ -300,10 +285,7 @@ public:
     }
 
     ValueKind kind() override { return ValueKind::UserFunction; }
-    std::string inspect() override
-    {
-        return std::format("<fn {}>", this->name());
-    }
+    std::string inspect() override { return std::format("<fn {}>", this->name()); }
 
     std::string name() { return m_name; }
 
@@ -312,9 +294,7 @@ private:
 };
 
 template <typename T>
-concept to_value = requires(T t) {
-    Value(t);
-};
+concept to_value = requires(T t) { Value(t); };
 
 // template <typename... Arguments>
 // class Callable : public Object {

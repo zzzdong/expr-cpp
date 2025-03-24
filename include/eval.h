@@ -1,3 +1,5 @@
+#pragma once
+
 #include "ast.h"
 #include "object.h"
 #include <memory>
@@ -17,10 +19,7 @@ public:
     void enter_scope() { m_frames.push_back(StackFrame()); }
     void level_scope() { m_frames.pop_back(); }
 
-    void insert(std::string name, Value value)
-    {
-        m_frames.back().locals.insert({ name, value });
-    }
+    void insert(std::string name, Value value) { m_frames.back().locals.insert({ name, value }); }
 
     void set(std::string name, Value value)
     {
@@ -94,20 +93,11 @@ public:
         }
     }
 
-    void enter_scope()
-    {
-        m_stack.enter_scope();
-    }
+    void enter_scope() { m_stack.enter_scope(); }
 
-    void level_scope()
-    {
-        m_stack.level_scope();
-    }
+    void level_scope() { m_stack.level_scope(); }
 
-    void insert_variable(std::string name, Value value)
-    {
-        m_stack.insert(name, value);
-    }
+    void insert_variable(std::string name, Value value) { m_stack.insert(name, value); }
 
     Value get_variable(std::string name)
     {
@@ -123,15 +113,9 @@ public:
 
         throw std::runtime_error("Variable not found: " + name);
     }
-    void set_variable(std::string name, Value value)
-    {
-        return m_stack.set(name, value);
-    }
+    void set_variable(std::string name, Value value) { return m_stack.set(name, value); }
 
-    std::vector<std::unique_ptr<Statement>>& statements()
-    {
-        return m_program->statements();
-    }
+    std::vector<std::unique_ptr<Statement>>& statements() { return m_program->statements(); }
 
     std::shared_ptr<FnStatement> get_function(std::string name)
     {
@@ -143,10 +127,7 @@ public:
         return fn;
     }
 
-    Stack& stack()
-    {
-        return m_stack;
-    }
+    Stack& stack() { return m_stack; }
 
     template <typename T>
         requires to_value<T>
@@ -189,10 +170,7 @@ private:
 
     Value eval_call(FnStatement& fn, std::vector<Value>& args);
 
-    template <typename Arguments> Value eval_call(Object& obj, Arguments args)
-    {
-       return obj.call(args);
-    }
+    template <typename Arguments> Value eval_call(Object& obj, Arguments args) { return obj.call(args); }
 
     Context& m_context;
 };

@@ -73,10 +73,7 @@ char32_t Tokenizer::next_char()
     return ch;
 }
 
-Token Tokenizer::make_token(TokenKind kind, std::string_view text)
-{
-    return Token { kind, text };
-}
+Token Tokenizer::make_token(TokenKind kind, std::string_view text) { return Token { kind, text }; }
 
 Token Tokenizer::make_token(TokenKind kind, const char* start)
 {
@@ -113,28 +110,20 @@ Token Tokenizer::eat_number()
 Token Tokenizer::eat_string()
 {
     auto start = m_input.begin();
-    bool escaped = false;
 
-    next_char();
+    char32_t prev = next_char(); // skip first quote
+    char32_t ch = next_char();
 
-    while (true) {
-        char32_t peek = peek_char();
-        if (peek == 0) {
+    while (ch != 0) {
+        if (prev != '\\' && ch == '"') {
             return make_token(TokenKind::String, start);
         }
 
-        if (peek == '\\') {
-            escaped = true;
-        }
-
-        if (peek == '"' && !escaped) {
-            return make_token(TokenKind::String, start);
-        }
-
-        next_char();
+        prev = ch;
+        ch = next_char();
     }
 
-    return make_token(TokenKind::String, start);
+    return make_token(TokenKind::Invalid, start);
 }
 
 Token Tokenizer::eat_punctuation()

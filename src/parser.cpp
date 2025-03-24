@@ -75,14 +75,13 @@ std::unique_ptr<Statement> Parser::parse_statement()
     }
 }
 
-std::unique_ptr<Statement> Parser::parse_let_statement()
+std::unique_ptr<LetStatement> Parser::parse_let_statement()
 {
     consum_token(TokenKind::Let);
     auto next = next_token();
     if (next == nullptr || next->kind != TokenKind::Identifier) {
         throw std::runtime_error(std::format(
-            "Expected identifier for let statement but got token(kind({})`{}`)",
-            int(next->kind), next->text));
+            "Expected identifier for let statement but got token(kind({})`{}`)", int(next->kind), next->text));
     }
     auto name = std::string(next->text);
 
@@ -90,8 +89,7 @@ std::unique_ptr<Statement> Parser::parse_let_statement()
     // let ident [= expr] ;
     auto peek = peek_token();
     if (peek == nullptr) {
-        throw std::runtime_error(
-            std::format("Incomplete let statement, expect `;` or `=`"));
+        throw std::runtime_error(std::format("Incomplete let statement, expect `;` or `=`"));
     }
     switch (peek->kind) {
     case TokenKind::Assign: {
@@ -105,8 +103,7 @@ std::unique_ptr<Statement> Parser::parse_let_statement()
     }
     default:
         throw std::runtime_error(std::format(
-            "Expected expression for let statement but got token(kind({})`{}`)",
-            int(next->kind), next->text));
+            "Expected expression for let statement but got token(kind({})`{}`)", int(next->kind), next->text));
     }
 
     consum_token(TokenKind::Semicolon);
@@ -114,25 +111,22 @@ std::unique_ptr<Statement> Parser::parse_let_statement()
     return std::make_unique<LetStatement>(name, std::move(expr));
 }
 
-std::unique_ptr<Statement> Parser::parse_if_statement()
+std::unique_ptr<IfStatement> Parser::parse_if_statement()
 {
     consum_token(TokenKind::If);
-    consum_token(TokenKind::LParen);
     auto condition = parse_expression();
-    consum_token(TokenKind::RParen);
     auto then_branch = parse_block_statement();
-    std::unique_ptr<Statement> else_branch = nullptr;
+    std::unique_ptr<BlockStatement> else_branch = nullptr;
     auto peek = peek_token();
     if (peek != nullptr && peek->kind == TokenKind::Else) {
         consum_token(TokenKind::Else);
-        else_branch = parse_statement();
+        else_branch = parse_block_statement();
     }
 
-    return std::make_unique<IfStatement>(
-        std::move(condition), std::move(then_branch), std::move(else_branch));
+    return std::make_unique<IfStatement>(std::move(condition), std::move(then_branch), std::move(else_branch));
 }
 
-std::unique_ptr<Statement> Parser::parse_for_statement()
+std::unique_ptr<ForStatement> Parser::parse_for_statement()
 {
     std::unique_ptr<Statement> initializer = nullptr;
     std::unique_ptr<Expression> condition = nullptr;
@@ -140,8 +134,6 @@ std::unique_ptr<Statement> Parser::parse_for_statement()
     std::unique_ptr<Statement> body = nullptr;
 
     consum_token(TokenKind::For);
-
-    consum_token(TokenKind::LParen);
 
     auto peek = peek_token();
     if (peek != nullptr && peek->kind == TokenKind::Semicolon) {
@@ -158,20 +150,18 @@ std::unique_ptr<Statement> Parser::parse_for_statement()
     consum_token(TokenKind::Semicolon);
 
     peek = peek_token();
-    if (peek != nullptr && peek->kind == TokenKind::RParen) {
+    if (peek != nullptr && peek->kind == TokenKind::LBrace) {
     } else {
         increment = parse_expression();
     }
-    consum_token(TokenKind::RParen);
 
     body = parse_statement();
 
-    return std::make_unique<ForStatement>(std::move(initializer),
-        std::move(condition),
-        std::move(increment), std::move(body));
+    return std::make_unique<ForStatement>(
+        std::move(initializer), std::move(condition), std::move(increment), std::move(body));
 }
 
-std::unique_ptr<Statement> Parser::parse_block_statement()
+std::unique_ptr<BlockStatement> Parser::parse_block_statement()
 {
     consum_token(TokenKind::LBrace);
 
@@ -187,7 +177,7 @@ std::unique_ptr<Statement> Parser::parse_block_statement()
     return std::make_unique<BlockStatement>(std::move(statements));
 }
 
-std::unique_ptr<Statement> Parser::parse_return_statement()
+std::unique_ptr<ReturnStatement> Parser::parse_return_statement()
 {
     consum_token(TokenKind::Return);
     auto peek = peek_token();
@@ -205,7 +195,7 @@ std::unique_ptr<Statement> Parser::parse_return_statement()
     return std::make_unique<ReturnStatement>(std::move(expr));
 }
 
-std::unique_ptr<Statement> Parser::parse_break_statement()
+std::unique_ptr<BreakStatement> Parser::parse_break_statement()
 {
     consum_token(TokenKind::Break);
     consum_token(TokenKind::Semicolon);
@@ -213,7 +203,7 @@ std::unique_ptr<Statement> Parser::parse_break_statement()
     return std::make_unique<BreakStatement>();
 }
 
-std::unique_ptr<Statement> Parser::parse_continue_statement()
+std::unique_ptr<ContinueStatement> Parser::parse_continue_statement()
 {
     consum_token(TokenKind::Continue);
     consum_token(TokenKind::Semicolon);
@@ -221,7 +211,7 @@ std::unique_ptr<Statement> Parser::parse_continue_statement()
     return std::make_unique<ContinueStatement>();
 }
 
-std::unique_ptr<Statement> Parser::parse_fn_statement()
+std::unique_ptr<FnStatement> Parser::parse_fn_statement()
 {
     consum_token(TokenKind::Fn);
 
@@ -236,10 +226,7 @@ std::unique_ptr<Statement> Parser::parse_fn_statement()
     return std::make_unique<FnStatement>(name, params, std::move(body));
 }
 
-std::unique_ptr<Expression> Parser::parse_expression()
-{
-    return parse_expression_precedence(Precedence::Lowest);
-}
+std::unique_ptr<Expression> Parser::parse_expression() { return parse_expression_precedence(Precedence::Lowest); }
 
 std::shared_ptr<Token> Parser::peek_token() { return m_peek_token; }
 
@@ -260,17 +247,18 @@ std::shared_ptr<Token> Parser::next_token()
 std::shared_ptr<Token> Parser::consum_token(TokenKind kind)
 {
     auto next = next_token();
-    if (next == nullptr || next->kind != kind) {
+    if (next == nullptr) {
+        throw std::runtime_error(std::format("Expected token for kind({}) expression but got EOF", kind));
+    }
+    if (next->kind != kind) {
         throw std::runtime_error(
-            std::format("Expected token of kind({}), but got token(kind({})`{}`)",
-                int(kind), int(next->kind), next->text));
+            std::format("Expected token of kind({}), but got token(kind({})`{}`)", kind, next->kind, next->text));
     }
 
     return next;
 }
 
-std::unique_ptr<Expression>
-Parser::parse_expression_precedence(Precedence precedence)
+std::unique_ptr<Expression> Parser::parse_expression_precedence(Precedence precedence)
 {
     auto expr = parse_prefix_expression();
 
@@ -292,8 +280,7 @@ std::unique_ptr<Expression> Parser::parse_prefix_expression()
 {
     auto peek = peek_token();
     if (peek == nullptr) {
-        throw std::runtime_error(
-            "Expected token for prefix expression but got EOF");
+        throw std::runtime_error("Expected token for prefix expression but got EOF");
     }
 
     switch (peek->kind) {
@@ -301,8 +288,7 @@ std::unique_ptr<Expression> Parser::parse_prefix_expression()
         next_token();
         auto expr = parse_expression();
         if (expr == nullptr) {
-            throw std::runtime_error(
-                "Expected expression for prefix expression but got null");
+            throw std::runtime_error("Expected expression for prefix expression but got null");
         }
         return std::make_unique<PrefixExpression>(Operator::Not, std::move(expr));
     }
@@ -310,20 +296,16 @@ std::unique_ptr<Expression> Parser::parse_prefix_expression()
         next_token();
         auto expr = parse_expression();
         if (expr == nullptr) {
-            throw std::runtime_error(
-                "Expected expression for prefix expression but got null");
+            throw std::runtime_error("Expected expression for prefix expression but got null");
         }
-        return std::make_unique<PrefixExpression>(Operator::Subtract,
-            std::move(expr));
+        return std::make_unique<PrefixExpression>(Operator::Subtract, std::move(expr));
     }
     default:
         return parse_primary();
     }
 }
 
-std::unique_ptr<Expression>
-Parser::parse_postfix_expression(Token& peek,
-    std::unique_ptr<Expression> expr)
+std::unique_ptr<Expression> Parser::parse_postfix_expression(Token& peek, std::unique_ptr<Expression> expr)
 {
     switch (peek.kind) {
     case TokenKind::LBracket: {
@@ -339,30 +321,25 @@ Parser::parse_postfix_expression(Token& peek,
 
         consum_token(TokenKind::LParen);
         auto args = parse_list<std::unique_ptr<Expression>>(
-            TokenKind::RParen, TokenKind::Comma,
-            [this]() { return this->parse_expression(); });
+            TokenKind::RParen, TokenKind::Comma, [this]() { return this->parse_expression(); });
         consum_token(TokenKind::RParen);
 
         return std::make_unique<CallExpression>(std::move(expr), std::move(args));
     }
     case TokenKind::Increase: {
         consum_token(TokenKind::Increase);
-        return std::make_unique<PostfixExpression>(Operator::Increase,
-            std::move(expr));
+        return std::make_unique<PostfixExpression>(Operator::Increase, std::move(expr));
     }
     case TokenKind::Decrease: {
         consum_token(TokenKind::Decrease);
-        return std::make_unique<PostfixExpression>(Operator::Decrease,
-            std::move(expr));
+        return std::make_unique<PostfixExpression>(Operator::Decrease, std::move(expr));
     }
     default:
         return std::move(expr);
     }
 }
 
-std::unique_ptr<Expression>
-Parser::parse_infix_expression(std::unique_ptr<Expression> expr,
-    Precedence precedence)
+std::unique_ptr<Expression> Parser::parse_infix_expression(std::unique_ptr<Expression> expr, Precedence precedence)
 {
     auto peek = peek_token();
     if (peek == nullptr) {
@@ -379,15 +356,13 @@ Parser::parse_infix_expression(std::unique_ptr<Expression> expr,
         auto token = next_token();
         auto op = binary_operator(token->kind);
         if (op == Operator::Invalid) {
-            throw std::runtime_error(
-                std::format("Invalid binary operator of `{0}`", token->text));
+            throw std::runtime_error(std::format("Invalid binary operator of `{0}`", token->text));
         }
         auto rhs = parse_expression_precedence(precedence);
         if (rhs == nullptr) {
             throw std::runtime_error("Invalid binary rhs");
         }
-        return std::make_unique<BinaryExpression>(op, std::move(expr),
-            std::move(rhs));
+        return std::make_unique<BinaryExpression>(op, std::move(expr), std::move(rhs));
     }
     }
 }
@@ -408,9 +383,9 @@ std::unique_ptr<Expression> Parser::parse_primary()
         auto token = next_token();
         return std::make_unique<BooleanLiteral>(false);
     }
-    case TokenKind::Undefined: {
+    case TokenKind::Null: {
         auto token = next_token();
-        return std::make_unique<UndefinedLiteral>();
+        return std::make_unique<NullLiteral>();
     }
     case TokenKind::Integer: {
         auto token = next_token();
@@ -471,16 +446,14 @@ std::unique_ptr<Expression> Parser::parse_primary()
         // array expression
         consum_token(TokenKind::LBracket);
         std::vector<std::unique_ptr<Expression>> elements = parse_list<std::unique_ptr<Expression>>(
-            TokenKind::RBracket, TokenKind::Comma,
-            [this]() { return this->parse_expression(); });
+            TokenKind::RBracket, TokenKind::Comma, [this]() { return this->parse_expression(); });
         consum_token(TokenKind::RBracket);
 
         return std::make_unique<ArrayExpression>(std::move(elements));
     }
 
     default:
-        throw std::runtime_error(std::format(
-            "unexpected token(`{}`) for primary expression", peek->text));
+        throw std::runtime_error(std::format("unexpected token(`{}`) for primary expression", peek->text));
     }
 }
 
@@ -523,7 +496,7 @@ Precedence get_precedence(TokenKind kind)
         return Precedence::Index;
     case TokenKind::Dot:
         return Precedence::Access;
-    case TokenKind::Undefined:
+    case TokenKind::Null:
     case TokenKind::True:
     case TokenKind::False:
     case TokenKind::Integer:

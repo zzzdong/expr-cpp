@@ -25,33 +25,23 @@ private:
     std::shared_ptr<Token> next_token();
     std::shared_ptr<Token> consum_token(TokenKind kind);
 
-    std::unique_ptr<Statement> parse_let_statement();
-    std::unique_ptr<Statement> parse_if_statement();
-    std::unique_ptr<Statement> parse_for_statement();
-    std::unique_ptr<Statement> parse_block_statement();
-    std::unique_ptr<Statement> parse_return_statement();
-    std::unique_ptr<Statement> parse_break_statement();
-    std::unique_ptr<Statement> parse_continue_statement();
-    std::unique_ptr<Statement> parse_fn_statement();
+    std::unique_ptr<LetStatement> parse_let_statement();
+    std::unique_ptr<IfStatement> parse_if_statement();
+    std::unique_ptr<ForStatement> parse_for_statement();
+    std::unique_ptr<BlockStatement> parse_block_statement();
+    std::unique_ptr<ReturnStatement> parse_return_statement();
+    std::unique_ptr<BreakStatement> parse_break_statement();
+    std::unique_ptr<ContinueStatement> parse_continue_statement();
+    std::unique_ptr<FnStatement> parse_fn_statement();
 
-    std::unique_ptr<Expression>
-    parse_expression_precedence(Precedence precedence);
+    std::unique_ptr<Expression> parse_expression_precedence(Precedence precedence);
     std::unique_ptr<Expression> parse_prefix_expression();
-    std::unique_ptr<Expression>
-    parse_postfix_expression(Token& token, std::unique_ptr<Expression> expr);
-    std::unique_ptr<Expression>
-    parse_infix_expression(std::unique_ptr<Expression> expr,
-        Precedence precedence);
+    std::unique_ptr<Expression> parse_postfix_expression(Token& token, std::unique_ptr<Expression> expr);
+    std::unique_ptr<Expression> parse_infix_expression(std::unique_ptr<Expression> expr, Precedence precedence);
     std::unique_ptr<Expression> parse_primary();
     std::string parse_identifier();
 
-    // std::vector<std::unique_ptr<Expression>>
-    // parse_list(TokenKind end, TokenKind separator,
-    //            std::function<std::unique_ptr<Expression>()> parse);
-
-    template <typename T>
-    std::vector<T> parse_list(TokenKind end, TokenKind separator,
-        std::function<T()> parse)
+    template <typename T> std::vector<T> parse_list(TokenKind end, TokenKind separator, std::function<T()> parse)
     {
         std::vector<T> list;
 
@@ -70,8 +60,7 @@ private:
             }
 
             if (peek->kind != separator) {
-                throw std::runtime_error(
-                    std::format("Expected '{0}' or '{1}'", int(separator), int(end)));
+                throw std::runtime_error(std::format("Expected '{0}' or '{1}'", int(separator), int(end)));
             }
 
             next_token();
