@@ -1,4 +1,5 @@
 #include "tokenizer.h"
+
 #include <cctype>
 #include <cstddef>
 #include <cuchar>
@@ -26,6 +27,10 @@ Token Tokenizer::next()
         if (peek == ' ' || peek == '\t' || peek == '\n' || peek == '\r') {
             next_char();
             continue;
+        }
+
+        if (peek == '$') {
+            return eat_env_variable();
         }
 
         if (std::isdigit(peek)) {
@@ -80,6 +85,26 @@ Token Tokenizer::make_token(TokenKind kind, const char* start)
     return Token { kind, std::string_view(start, m_input.begin() - start) };
 }
 
+Token Tokenizer::eat_env_variable()
+{
+    auto start = m_input.begin();
+
+    next_char(); // eat $
+
+    auto peek = peek_char();
+    if (peek != '_' && !std::isalpha(peek)) { // must start with _ or a letter
+        return make_token(TokenKind::Invalid, start);
+    }
+
+    auto s = eat_while([](char32_t ch) { return std::isalnum(ch) || ch == '_'; });
+    auto found = KEYWORDS.find(s);
+    if (found != KEYWORDS.end()) { // must not be a keyword
+        return make_token(TokenKind::Invalid, start);
+    }
+
+    return make_token(TokenKind::EnvVariable, start);
+}
+
 Token Tokenizer::eat_identifier()
 {
     auto s = eat_while([](char32_t ch) { return std::isalnum(ch) || ch == '_'; });
@@ -111,19 +136,28 @@ Token Tokenizer::eat_string()
 {
     auto start = m_input.begin();
 
-    char32_t prev = next_char(); // skip first quote
+    next_char(); // eat "
+
+    bool escaped = false;
     char32_t ch = next_char();
 
     while (ch != 0) {
-        if (prev != '\\' && ch == '"') {
-            return make_token(TokenKind::String, start);
+        if (ch == '"') {
+            if (!escaped) {
+                return make_token(TokenKind::String, start);
+            } else {
+                escaped = false; // 处理转义的双引号（\"的情况）
+            }
+        } else if (ch == '\\') {
+            escaped = !escaped; // 简化转义标志切换
+        } else {
+            escaped = false;
         }
 
-        prev = ch;
         ch = next_char();
     }
 
-    return make_token(TokenKind::Invalid, start);
+    return make_token(TokenKind::Invalid, "Unclosed string literal");
 }
 
 Token Tokenizer::eat_punctuation()

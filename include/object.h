@@ -25,7 +25,10 @@ enum class ValueKind {
 std::string value_kind_str(const ValueKind kind);
 
 // 新增流输出操作符重载
-inline std::ostream& operator<<(std::ostream& os, ValueKind kind) { return os << value_kind_str(kind); }
+inline std::ostream& operator<<(std::ostream& os, ValueKind kind)
+{
+    return os << value_kind_str(kind);
+}
 
 enum class Comparison {
     Equal,
@@ -43,13 +46,14 @@ public:
     }
 
     InvalidOperate(Operator op, ValueKind obj)
-        : invalid_argument(std::format("invalid {} unary operation for {}", operator_str(op), value_kind_str(obj)))
+        : invalid_argument(std::format(
+              "invalid {} unary operation for {}", operator_str(op), value_kind_str(obj)))
     {
     }
 
     InvalidOperate(Operator op, ValueKind lhs, ValueKind rhs)
-        : invalid_argument(std::format(
-              "invalid {} operation for {} with {}", operator_str(op), value_kind_str(lhs), value_kind_str(rhs)))
+        : invalid_argument(std::format("invalid {} operation for {} with {}", operator_str(op),
+              value_kind_str(lhs), value_kind_str(rhs)))
     {
     }
 };
@@ -86,6 +90,10 @@ public:
     virtual Value mod(const Value& other);
 
     virtual Comparison compare(const Value& other);
+
+    virtual bool logic_and(const Value& other);
+
+    virtual bool logic_or(const Value& other);
 
     virtual Value index(const Value& index);
 
@@ -146,25 +154,29 @@ private:
 
 class Value {
 public:
-    Value();
-
     Value(std::shared_ptr<Object> obj)
         : m_obj(obj)
     {
     }
 
+    explicit Value();
     explicit Value(bool value);
     explicit Value(int value);
     explicit Value(int64_t value);
     explicit Value(double value);
-    explicit Value(std::string value);
+    explicit Value(const char* value);
+    explicit Value(std::string& value);
+    explicit Value(std::string&& value);
 
     Value operator=(const Value& other);
     operator bool() const;
     operator int64_t() const;
     operator double() const;
     operator std::string() const;
-    bool operator==(const Value& other) const { return this->m_obj->compare(other.m_obj) == Comparison::Equal; }
+    bool operator==(const Value& other) const
+    {
+        return this->m_obj->compare(other.m_obj) == Comparison::Equal;
+    }
 
     bool operator!=(const Value& other) const { return !(*this == other); }
 
@@ -177,7 +189,8 @@ public:
     std::string& as_string() const;
     UserFunction& as_user_function() const;
 
-    template <typename T, typename... Arguments> NativeFunction<T, Arguments...>& as_native_function() const
+    template <typename T, typename... Arguments>
+    NativeFunction<T, Arguments...>& as_native_function() const
     {
         return *std::dynamic_pointer_cast<NativeFunction<T, Arguments...>>(this->obj());
     }
@@ -200,7 +213,7 @@ public:
 
 class Boolean : public Object {
 public:
-    Boolean(bool value)
+    explicit Boolean(bool value)
         : m_value(value)
     {
     }
@@ -211,13 +224,16 @@ public:
 
     Comparison compare(const Value& other) override;
 
+    bool logic_and(const Value& other) override;
+    bool logic_or(const Value& other) override;
+
 private:
     bool m_value;
 };
 
 class Integer : public Object {
 public:
-    Integer(int64_t value)
+    explicit Integer(int64_t value)
         : m_value(value)
     {
     }
@@ -239,7 +255,7 @@ private:
 
 class Float : public Object {
 public:
-    Float(double value)
+    explicit Float(double value)
         : m_value(value)
     {
     }
@@ -260,7 +276,7 @@ private:
 
 class String : public Object {
 public:
-    String(std::string value)
+    explicit String(std::string value)
         : m_value(value)
     {
     }

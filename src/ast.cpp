@@ -1,4 +1,5 @@
 #include "ast.h"
+
 #include <format>
 #include <sstream>
 #include <string>
@@ -56,29 +57,27 @@ std::string ASTInspector::inspect(ASTNode& node)
         auto& program = dynamic_cast<Program&>(node);
 
         for (auto& [name, fn] : program.functions()) {
-            ss << std::format("{0}", ASTInspector::inspect(*fn));
+            ss << std::format("{0}", ASTInspector::inspect(*fn)) << std::endl;
         }
 
         if (program.statements().size() > 0) {
-            auto begin = program.statements().begin();
-            for (; begin != (program.statements().end() - 1); begin++) {
-                ss << std::format("{0}", ASTInspector::inspect(**begin)) << std::endl;
+            for (auto& stmt : program.statements()) {
+                ss << std::format("{0}", ASTInspector::inspect(*stmt)) << std::endl;
             }
-            ss << std::format("{0}", ASTInspector::inspect(**begin));
         }
 
         return ss.str();
     }
     case ASTNode::Kind::ReturnStmt: {
         auto& return_stmt = dynamic_cast<ReturnStatement&>(node);
-        return std::format(
-            "return {0};", return_stmt.value() != nullptr ? ASTInspector::inspect(*return_stmt.value()) : "nullptr");
+        return std::format("return {0};",
+            return_stmt.value() ? ASTInspector::inspect(*return_stmt.value()) : "nullptr");
     }
     case ASTNode::Kind::LetStmt: {
         LetStatement& let_stmt = dynamic_cast<LetStatement&>(node);
 
         return std::format("LetStmt(name: {0}, value: {1})", let_stmt.name(),
-            let_stmt.value() != nullptr ? ASTInspector::inspect(*let_stmt.value()) : "nullptr");
+            let_stmt.value() ? ASTInspector::inspect(*let_stmt.value()) : "nullptr");
     }
     case ASTNode::Kind::ForStmt: {
         ForStatement& for_stmt = dynamic_cast<ForStatement&>(node);
@@ -107,7 +106,8 @@ std::string ASTInspector::inspect(ASTNode& node)
         IfStatement& if_stmt = dynamic_cast<IfStatement&>(node);
         return std::format("IfStmt(condition: {0}, then_branch: {1}, else_branch: "
                            "{2})",
-            ASTInspector::inspect(if_stmt.condition()), ASTInspector::inspect(if_stmt.then_branch()),
+            ASTInspector::inspect(if_stmt.condition()),
+            ASTInspector::inspect(if_stmt.then_branch()),
             if_stmt.else_branch() ? ASTInspector::inspect(*if_stmt.else_branch()) : "nullptr");
     }
     case ASTNode::Kind::ExprStmt: {
@@ -127,17 +127,18 @@ std::string ASTInspector::inspect(ASTNode& node)
     }
     case ASTNode::Kind::BinaryExpr: {
         BinaryExpression& bin = dynamic_cast<BinaryExpression&>(node);
-        return std::format("BinaryExpression(op: {0}, left: {1}, right: {2})", operator_str(bin.op()),
-            inspect(bin.left()), inspect(bin.right()));
+        return std::format("BinaryExpression(op: {0}, left: {1}, right: {2})",
+            operator_str(bin.op()), inspect(bin.left()), inspect(bin.right()));
     }
     case ASTNode::Kind::PrefixExpr: {
         PrefixExpression& prefix = dynamic_cast<PrefixExpression&>(node);
-        return std::format("PrefixExpression(op: {0}, expr: {1})", operator_str(prefix.op()), inspect(prefix.expr()));
+        return std::format("PrefixExpression(op: {0}, expr: {1})", operator_str(prefix.op()),
+            inspect(prefix.expr()));
     }
     case ASTNode::Kind::PostfixExpr: {
         PostfixExpression& postfix = dynamic_cast<PostfixExpression&>(node);
-        return std::format(
-            "PostfixExpression(op: {0}, expr: {1})", operator_str(postfix.op()), inspect(postfix.expr()));
+        return std::format("PostfixExpression(op: {0}, expr: {1})", operator_str(postfix.op()),
+            inspect(postfix.expr()));
     }
     case ASTNode::Kind::LiteralExpr: {
         LiteralExpression& lit = dynamic_cast<LiteralExpression&>(node);
@@ -169,6 +170,10 @@ std::string ASTInspector::inspect(ASTNode& node)
         VariableExpression& var_expr = dynamic_cast<VariableExpression&>(node);
         return std::format("VariableExpr(name: {0})", var_expr.name());
     }
+    case ASTNode::Kind::EnvVariableExpr: {
+        EnvVariableExpression& var_expr = dynamic_cast<EnvVariableExpression&>(node);
+        return std::format("EnvVariableExpr(name: {0})", var_expr.name());
+    }
     case ASTNode::Kind::ArrayExpr: {
         ArrayExpression& arr_expr = dynamic_cast<ArrayExpression&>(node);
 
@@ -182,8 +187,8 @@ std::string ASTInspector::inspect(ASTNode& node)
     case ASTNode::Kind::IndexExpr: {
         IndexExpression& index_expr = dynamic_cast<IndexExpression&>(node);
 
-        return std::format(
-            "IndexExpr(object: {0}, index: {1})", inspect(index_expr.object()), inspect(index_expr.index()));
+        return std::format("IndexExpr(object: {0}, index: {1})", inspect(index_expr.object()),
+            inspect(index_expr.index()));
     }
     case ASTNode::Kind::CallExpr: {
         CallExpression& call_expr = dynamic_cast<CallExpression&>(node);
@@ -192,10 +197,12 @@ std::string ASTInspector::inspect(ASTNode& node)
             ss << inspect(*arg) << ", ";
         }
 
-        return std::format("CallExpr(callee: {0}, args: [{1}])", inspect(call_expr.callee()), ss.str());
+        return std::format(
+            "CallExpr(callee: {0}, args: [{1}])", inspect(call_expr.callee()), ss.str());
     }
 
     default:
-        throw std::runtime_error(std::format("Unknown ASTNode kind: {}", static_cast<int>(node.kind())));
+        throw std::runtime_error(
+            std::format("Unknown ASTNode kind: {}", static_cast<int>(node.kind())));
     }
 }

@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -67,6 +68,7 @@ public:
         PrefixExpr,
         PostfixExpr,
         VariableExpr,
+        EnvVariableExpr,
         LiteralExpr,
         IndexExpr,
         CallExpr,
@@ -95,7 +97,8 @@ public:
 
 class BinaryExpression : public Expression {
 public:
-    BinaryExpression(Operator op, std::unique_ptr<Expression> left, std::unique_ptr<Expression> right)
+    BinaryExpression(
+        Operator op, std::unique_ptr<Expression> left, std::unique_ptr<Expression> right)
         : m_operator(std::move(op))
         , m_left(std::move(left))
         , m_right(std::move(right))
@@ -221,7 +224,8 @@ public:
         if (other.kind() != Kind::LiteralExpr)
             return false;
         auto& other_literal = static_cast<const BooleanLiteral&>(other);
-        return other_literal.literal_kind() == LiteralKind::Boolean && other_literal.m_value == this->m_value;
+        return other_literal.literal_kind() == LiteralKind::Boolean
+            && other_literal.m_value == this->m_value;
     }
 
     bool value() { return m_value; }
@@ -244,7 +248,8 @@ public:
         if (other.kind() != Kind::LiteralExpr)
             return false;
         auto& other_literal = static_cast<const IntegerLiteral&>(other);
-        return other_literal.literal_kind() == LiteralKind::Integer && other_literal.m_value == this->m_value;
+        return other_literal.literal_kind() == LiteralKind::Integer
+            && other_literal.m_value == this->m_value;
     }
 
     int64_t value() { return m_value; }
@@ -267,7 +272,8 @@ public:
         if (other.kind() != Kind::LiteralExpr)
             return false;
         auto& other_literal = static_cast<const FloatLiteral&>(other);
-        return other_literal.literal_kind() == LiteralKind::Float && other_literal.m_value == this->m_value;
+        return other_literal.literal_kind() == LiteralKind::Float
+            && other_literal.m_value == this->m_value;
     }
 
     double value() { return m_value; }
@@ -290,7 +296,8 @@ public:
         if (other.kind() != Kind::LiteralExpr)
             return false;
         auto& other_literal = static_cast<const StringLiteral&>(other);
-        return other_literal.literal_kind() == LiteralKind::String && other_literal.m_value == this->m_value;
+        return other_literal.literal_kind() == LiteralKind::String
+            && other_literal.m_value == this->m_value;
     }
 
     std::string& value() { return m_value; }
@@ -313,6 +320,34 @@ public:
         if (other.kind() != Kind::VariableExpr)
             return false;
         auto& other_variable = static_cast<const VariableExpression&>(other);
+        return m_name == other_variable.m_name;
+    }
+
+    std::string& name() { return m_name; }
+
+private:
+    std::string m_name;
+};
+
+class EnvVariableExpression : public Expression {
+public:
+    EnvVariableExpression(std::string name)
+        : m_name(std::move(name))
+    {
+    }
+
+    EnvVariableExpression(std::string_view name)
+        : m_name(std::move(name))
+    {
+    }
+
+    Kind kind() const override { return Kind::EnvVariableExpr; }
+
+    bool equals(const ASTNode& other) const override
+    {
+        if (other.kind() != Kind::EnvVariableExpr)
+            return false;
+        auto& other_variable = static_cast<const EnvVariableExpression&>(other);
         return m_name == other_variable.m_name;
     }
 
@@ -381,7 +416,8 @@ private:
 
 class CallExpression : public Expression {
 public:
-    CallExpression(std::unique_ptr<Expression> callee, std::vector<std::unique_ptr<Expression>> args)
+    CallExpression(
+        std::unique_ptr<Expression> callee, std::vector<std::unique_ptr<Expression>> args)
         : m_callee(std::move(callee))
         , m_args(std::move(args))
     {
@@ -449,7 +485,8 @@ public:
             return false;
         auto& other_let = static_cast<const LetStatement&>(other);
         return (m_value == nullptr && other_let.m_value == nullptr)
-            || (m_value != nullptr && other_let.m_value != nullptr && *m_value == *other_let.m_value);
+            || (m_value != nullptr && other_let.m_value != nullptr
+                && *m_value == *other_let.m_value);
     }
 
     std::string& name() { return m_name; }
@@ -603,7 +640,8 @@ public:
 
         auto& other_return = static_cast<const ReturnStatement&>(other);
         return (m_value == nullptr && other_return.m_value == nullptr)
-            || (m_value != nullptr && other_return.m_value != nullptr && *m_value == *other_return.m_value);
+            || (m_value != nullptr && other_return.m_value != nullptr
+                && *m_value == *other_return.m_value);
     }
 
     std::unique_ptr<Expression>& value() { return m_value; }
@@ -642,7 +680,8 @@ public:
 
 class FnStatement : public Statement {
 public:
-    FnStatement(std::string name, std::vector<std::string> params, std::unique_ptr<BlockStatement> body)
+    FnStatement(
+        std::string name, std::vector<std::string> params, std::unique_ptr<BlockStatement> body)
         : m_name(std::move(name))
         , m_params(std::move(params))
         , m_body(std::move(body))
@@ -656,7 +695,8 @@ public:
         if (other.kind() != Kind::FnStmt)
             return false;
         auto& other_fn = static_cast<const FnStatement&>(other);
-        return m_name == other_fn.m_name && m_params == other_fn.m_params && *m_body == *other_fn.m_body;
+        return m_name == other_fn.m_name && m_params == other_fn.m_params
+            && *m_body == *other_fn.m_body;
     }
 
     std::string& name() { return m_name; }
@@ -680,7 +720,8 @@ public:
 
     Program(std::unique_ptr<Expression> expression)
     {
-        std::unique_ptr<ReturnStatement> stmt = std::make_unique<ReturnStatement>(std::move(expression));
+        std::unique_ptr<ReturnStatement> stmt
+            = std::make_unique<ReturnStatement>(std::move(expression));
 
         m_statements.push_back(std::move(stmt));
     }
@@ -702,7 +743,10 @@ public:
     }
 
     std::vector<std::unique_ptr<Statement>>& statements() { return m_statements; }
-    std::unordered_map<std::string, std::shared_ptr<FnStatement>>& functions() { return m_functions; }
+    std::unordered_map<std::string, std::shared_ptr<FnStatement>>& functions()
+    {
+        return m_functions;
+    }
 
 private:
     std::vector<std::unique_ptr<Statement>> m_statements;

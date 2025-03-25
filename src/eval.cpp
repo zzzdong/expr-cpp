@@ -1,5 +1,6 @@
 #include "eval.h"
 #include "ast.h"
+
 #include <format>
 #include <iostream>
 #include <memory>
@@ -62,7 +63,8 @@ ControlFlow Evaluator::eval(Statement& statement)
     case ASTNode::Kind::ExprStmt:
         return eval(dynamic_cast<ExpressionStatement&>(statement));
     default:
-        throw std::runtime_error(std::format("unimplemented eval for {}", ASTInspector::inspect(statement)));
+        throw std::runtime_error(
+            std::format("unimplemented eval for {}", ASTInspector::inspect(statement)));
     }
 }
 
@@ -159,6 +161,8 @@ Value Evaluator::eval(Expression& expression)
         return eval(dynamic_cast<LiteralExpression&>(expression));
     case ASTNode::Kind::VariableExpr:
         return eval(dynamic_cast<VariableExpression&>(expression));
+    case ASTNode::Kind::EnvVariableExpr:
+        return eval(dynamic_cast<EnvVariableExpression&>(expression));
     case ASTNode::Kind::BinaryExpr:
         return eval(dynamic_cast<BinaryExpression&>(expression));
     case ASTNode::Kind::PrefixExpr:
@@ -168,7 +172,8 @@ Value Evaluator::eval(Expression& expression)
     case ASTNode::Kind::CallExpr:
         return eval(dynamic_cast<CallExpression&>(expression));
     default:
-        throw std::runtime_error(std::format("unimplemented for eval: {}", ASTInspector::inspect(expression)));
+        throw std::runtime_error(
+            std::format("unimplemented for eval: {}", ASTInspector::inspect(expression)));
     }
 }
 
@@ -182,26 +187,33 @@ Value Evaluator::eval(LiteralExpression& literal)
         BooleanLiteral& bool_lit = dynamic_cast<BooleanLiteral&>(literal);
         return Value(bool_lit.value());
     }
-
     case LiteralKind::Integer: {
         IntegerLiteral& int_lit = dynamic_cast<IntegerLiteral&>(literal);
         return Value(int_lit.value());
     }
-
     case LiteralKind::Float: {
         FloatLiteral& float_lit = dynamic_cast<FloatLiteral&>(literal);
         return Value(float_lit.value());
     }
     case LiteralKind::String: {
         StringLiteral& string_lit = dynamic_cast<StringLiteral&>(literal);
-        return Value(string_lit.value());
+        auto v = Value(string_lit.value());
+        return v;
     }
     default:
         throw std::runtime_error("Invalid literal kind");
     }
 }
 
-Value Evaluator::eval(VariableExpression& expression) { return m_context.get_variable(expression.name()); }
+Value Evaluator::eval(VariableExpression& expression)
+{
+    return m_context.get_variable(expression.name());
+}
+
+Value Evaluator::eval(EnvVariableExpression& expression)
+{
+    return m_context.get_env_variable(expression.name());
+}
 
 Value Evaluator::eval(BinaryExpression& expression)
 {
@@ -243,6 +255,14 @@ Value Evaluator::eval(BinaryExpression& expression)
         auto result = lhs.obj()->compare(rhs);
         return Value(result == Comparison::Equal || result == Comparison::Less);
     }
+    case Operator::LogicAnd: {
+        auto result = lhs.obj()->logic_and(rhs);
+        return Value(result);
+    }
+    case Operator::LogicOr: {
+        auto result = lhs.obj()->logic_or(rhs);
+        return Value(result);
+    }
     case Operator::Assign: {
         switch (expression.left().kind()) {
         case ASTNode::Kind::VariableExpr: {
@@ -251,8 +271,8 @@ Value Evaluator::eval(BinaryExpression& expression)
             return rhs;
         }
         default:
-            throw InvalidOperate(
-                std::format("Invalid assignment target, {}", ASTInspector::inspect(expression.left())));
+            throw InvalidOperate(std::format(
+                "Invalid assignment target, {}", ASTInspector::inspect(expression.left())));
         }
     }
     default:

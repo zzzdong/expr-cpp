@@ -30,17 +30,45 @@ std::string value_kind_str(ValueKind kind)
     }
 }
 
-Value Object::add(const Value& other) { throw InvalidOperate(Operator::Add, this->kind(), other.kind()); }
+Value Object::add(const Value& other)
+{
+    throw InvalidOperate(Operator::Add, this->kind(), other.kind());
+}
 
-Value Object::sub(const Value& other) { throw InvalidOperate(Operator::Subtract, this->kind(), other.kind()); }
+Value Object::sub(const Value& other)
+{
+    throw InvalidOperate(Operator::Subtract, this->kind(), other.kind());
+}
 
-Value Object::mul(const Value& other) { throw InvalidOperate(Operator::Multiply, this->kind(), other.kind()); }
+Value Object::mul(const Value& other)
+{
+    throw InvalidOperate(Operator::Multiply, this->kind(), other.kind());
+}
 
-Value Object::div(const Value& other) { throw InvalidOperate(Operator::Divide, this->kind(), other.kind()); }
+Value Object::div(const Value& other)
+{
+    throw InvalidOperate(Operator::Divide, this->kind(), other.kind());
+}
 
-Value Object::mod(const Value& other) { throw InvalidOperate(Operator::Modulo, this->kind(), other.kind()); }
+Value Object::mod(const Value& other)
+{
+    throw InvalidOperate(Operator::Modulo, this->kind(), other.kind());
+}
 
-Comparison Object::compare(const Value& other) { throw InvalidOperate(Operator::Equals, this->kind(), other.kind()); }
+Comparison Object::compare(const Value& other)
+{
+    throw InvalidOperate(Operator::Equals, this->kind(), other.kind());
+}
+
+bool Object::logic_and(const Value& other)
+{
+    throw InvalidOperate(Operator::LogicAnd, this->kind(), other.kind());
+}
+
+bool Object::logic_or(const Value& other)
+{
+    throw InvalidOperate(Operator::LogicOr, this->kind(), other.kind());
+}
 
 Value Object::index(const Value& index) { throw std::runtime_error("Not implemented"); }
 
@@ -48,11 +76,18 @@ Value Object::call(Value args...) { throw std::runtime_error("Not implemented");
 
 Value Object::get_attr(std::string name) { throw std::runtime_error("Not implemented"); }
 
-void Object::set_attr(std::string name, Value value) { throw std::runtime_error("Not implemented"); }
+void Object::set_attr(std::string name, Value value)
+{
+    throw std::runtime_error("Not implemented");
+}
 
-Value Object::method(std::string name, std::vector<const Value>& args) { throw std::runtime_error("Not implemented"); }
+Value Object::method(std::string name, std::vector<const Value>& args)
+{
+    throw std::runtime_error("Not implemented");
+}
 
-template <typename T, typename... Arguments> Value NativeFunction<T, Arguments...>::call(Value args...)
+template <typename T, typename... Arguments>
+Value NativeFunction<T, Arguments...>::call(Value args...)
 {
     return Value(m_func(args));
 }
@@ -82,7 +117,17 @@ Value::Value(double value)
 {
 }
 
-Value::Value(std::string value)
+Value::Value(const char* value)
+    : m_obj(std::make_shared<String>(value))
+{
+}
+
+Value::Value(std::string& value)
+    : m_obj(std::make_shared<String>(value))
+{
+}
+
+Value::Value(std::string&& value)
     : m_obj(std::make_shared<String>(value))
 {
 }
@@ -99,7 +144,10 @@ Value::operator int64_t() const { return std::dynamic_pointer_cast<Integer>(this
 
 Value::operator double() const { return std::dynamic_pointer_cast<Float>(this->m_obj)->value(); }
 
-Value::operator std::string() const { return std::dynamic_pointer_cast<String>(this->m_obj)->value(); }
+Value::operator std::string() const
+{
+    return std::dynamic_pointer_cast<String>(this->m_obj)->value();
+}
 
 void Value::set(Value value) { m_obj = value.m_obj; }
 
@@ -109,13 +157,22 @@ std::string Value::inspect() { return m_obj->inspect(); }
 
 bool& Value::as_boolean() const { return std::dynamic_pointer_cast<Boolean>(this->m_obj)->value(); }
 
-int64_t& Value::as_integer() const { return std::dynamic_pointer_cast<Integer>(this->m_obj)->value(); }
+int64_t& Value::as_integer() const
+{
+    return std::dynamic_pointer_cast<Integer>(this->m_obj)->value();
+}
 
 double& Value::as_float() const { return std::dynamic_pointer_cast<Float>(this->m_obj)->value(); }
 
-std::string& Value::as_string() const { return std::dynamic_pointer_cast<String>(this->m_obj)->value(); }
+std::string& Value::as_string() const
+{
+    return std::dynamic_pointer_cast<String>(this->m_obj)->value();
+}
 
-UserFunction& Value::as_user_function() const { return *std::dynamic_pointer_cast<UserFunction>(this->m_obj); }
+UserFunction& Value::as_user_function() const
+{
+    return *std::dynamic_pointer_cast<UserFunction>(this->m_obj);
+}
 
 Comparison Null::compare(const Value& other)
 {
@@ -143,6 +200,30 @@ Comparison Boolean::compare(const Value& other)
     }
     default:
         throw InvalidOperate(Operator::Equals, this->kind(), other.kind());
+    }
+}
+
+bool Boolean::logic_and(const Value& other)
+{
+    switch (other.kind()) {
+    case ValueKind::Boolean: {
+        auto other_bool = other.as_boolean();
+        return this->value() && other_bool;
+    }
+    default:
+        throw InvalidOperate(Operator::LogicAnd, this->kind(), other.kind());
+    }
+}
+
+bool Boolean::logic_or(const Value& other)
+{
+    switch (other.kind()) {
+    case ValueKind::Boolean: {
+        auto other_bool = other.as_boolean();
+        return this->value() || other_bool;
+    }
+    default:
+        throw InvalidOperate(Operator::LogicOr, this->kind(), other.kind());
     }
 }
 
@@ -348,7 +429,8 @@ Value String::add(const Value& other)
     switch (other.kind()) {
     case ValueKind::String: {
         auto other_string = other.as_string();
-        return Value(this->value() + other_string);
+        auto s = this->value() + other_string;
+        return Value(s);
     }
     default:
         throw InvalidOperate(Operator::Add, this->kind(), other.kind());

@@ -1,6 +1,7 @@
 #include "parser.h"
 #include "ast.h"
 #include "tokenizer.h"
+
 #include <format>
 #include <memory>
 #include <stdexcept>
@@ -80,8 +81,9 @@ std::unique_ptr<LetStatement> Parser::parse_let_statement()
     consum_token(TokenKind::Let);
     auto next = next_token();
     if (next == nullptr || next->kind != TokenKind::Identifier) {
-        throw std::runtime_error(std::format(
-            "Expected identifier for let statement but got token(kind({})`{}`)", int(next->kind), next->text));
+        throw std::runtime_error(
+            std::format("Expected identifier for let statement but got token(kind({})`{}`)",
+                next->kind, next->text));
     }
     auto name = std::string(next->text);
 
@@ -102,8 +104,9 @@ std::unique_ptr<LetStatement> Parser::parse_let_statement()
         break;
     }
     default:
-        throw std::runtime_error(std::format(
-            "Expected expression for let statement but got token(kind({})`{}`)", int(next->kind), next->text));
+        throw std::runtime_error(
+            std::format("Expected expression for let statement but got token(kind({})`{}`)",
+                int(next->kind), next->text));
     }
 
     consum_token(TokenKind::Semicolon);
@@ -123,7 +126,8 @@ std::unique_ptr<IfStatement> Parser::parse_if_statement()
         else_branch = parse_block_statement();
     }
 
-    return std::make_unique<IfStatement>(std::move(condition), std::move(then_branch), std::move(else_branch));
+    return std::make_unique<IfStatement>(
+        std::move(condition), std::move(then_branch), std::move(else_branch));
 }
 
 std::unique_ptr<ForStatement> Parser::parse_for_statement()
@@ -218,7 +222,8 @@ std::unique_ptr<FnStatement> Parser::parse_fn_statement()
     auto name = parse_identifier();
 
     consum_token(TokenKind::LParen);
-    auto params = parse_list<std::string>(TokenKind::RParen, TokenKind::Comma, [this]() { return parse_identifier(); });
+    auto params = parse_list<std::string>(
+        TokenKind::RParen, TokenKind::Comma, [this]() { return parse_identifier(); });
     consum_token(TokenKind::RParen);
 
     auto body = parse_block_statement();
@@ -226,7 +231,10 @@ std::unique_ptr<FnStatement> Parser::parse_fn_statement()
     return std::make_unique<FnStatement>(name, params, std::move(body));
 }
 
-std::unique_ptr<Expression> Parser::parse_expression() { return parse_expression_precedence(Precedence::Lowest); }
+std::unique_ptr<Expression> Parser::parse_expression()
+{
+    return parse_expression_precedence(Precedence::Lowest);
+}
 
 std::shared_ptr<Token> Parser::peek_token() { return m_peek_token; }
 
@@ -248,11 +256,13 @@ std::shared_ptr<Token> Parser::consum_token(TokenKind kind)
 {
     auto next = next_token();
     if (next == nullptr) {
-        throw std::runtime_error(std::format("Expected token for kind({}) expression but got EOF", kind));
+        throw std::runtime_error(
+            std::format("Expected token for kind({}) expression but got EOF", kind));
     }
     if (next->kind != kind) {
         throw std::runtime_error(
-            std::format("Expected token of kind({}), but got token(kind({})`{}`)", kind, next->kind, next->text));
+            std::format("Expected token of kind({}), but got token(kind({})`{}`)", kind, next->kind,
+                next->text));
     }
 
     return next;
@@ -305,7 +315,8 @@ std::unique_ptr<Expression> Parser::parse_prefix_expression()
     }
 }
 
-std::unique_ptr<Expression> Parser::parse_postfix_expression(Token& peek, std::unique_ptr<Expression> expr)
+std::unique_ptr<Expression> Parser::parse_postfix_expression(
+    Token& peek, std::unique_ptr<Expression> expr)
 {
     switch (peek.kind) {
     case TokenKind::LBracket: {
@@ -339,7 +350,8 @@ std::unique_ptr<Expression> Parser::parse_postfix_expression(Token& peek, std::u
     }
 }
 
-std::unique_ptr<Expression> Parser::parse_infix_expression(std::unique_ptr<Expression> expr, Precedence precedence)
+std::unique_ptr<Expression> Parser::parse_infix_expression(
+    std::unique_ptr<Expression> expr, Precedence precedence)
 {
     auto peek = peek_token();
     if (peek == nullptr) {
@@ -401,8 +413,9 @@ std::unique_ptr<Expression> Parser::parse_primary()
         auto token = next_token();
         std::string result;
         auto view = token->text;
-        view.remove_prefix(1);
-        view.remove_suffix(1);
+
+        view.remove_prefix(1); // remove leading "
+        view.remove_suffix(1); // remove trailing "
 
         for (auto c = view.begin(); c != view.end(); ++c) {
             if (*c == '\\') {
@@ -434,6 +447,13 @@ std::unique_ptr<Expression> Parser::parse_primary()
         return std::make_unique<VariableExpression>(std::string(token->text));
     }
 
+    case TokenKind::EnvVariable: {
+        auto token = next_token();
+        auto view = token->text;
+        view.remove_prefix(1);
+        return std::make_unique<EnvVariableExpression>(view);
+    }
+
     case TokenKind::LParen: {
         // grouped expression
         consum_token(TokenKind::LParen);
@@ -453,7 +473,8 @@ std::unique_ptr<Expression> Parser::parse_primary()
     }
 
     default:
-        throw std::runtime_error(std::format("unexpected token(`{}`) for primary expression", peek->text));
+        throw std::runtime_error(
+            std::format("unexpected token(`{}`) for primary expression", peek->text));
     }
 }
 

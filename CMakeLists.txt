@@ -18,7 +18,6 @@ add_executable(TestTokenizer tests/TestTokenizer.cpp)
 target_link_libraries(TestTokenizer PRIVATE expr GTest::GTest GTest::Main)
 add_test(TestTokenizer TestTokenizer)
 
-
 add_executable(TestParser tests/TestParser.cpp)
 target_link_libraries(TestParser PRIVATE expr GTest::GTest GTest::Main)
 add_test(TestParser TestParser)

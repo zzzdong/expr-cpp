@@ -19,7 +19,7 @@ public:
     void enter_scope() { m_frames.push_back(StackFrame()); }
     void level_scope() { m_frames.pop_back(); }
 
-    void insert(std::string name, Value value) { m_frames.back().locals.insert({ name, value }); }
+    void insert(std::string& name, Value value) { m_frames.back().locals.insert({ name, value }); }
 
     void set(std::string name, Value value)
     {
@@ -99,21 +99,26 @@ public:
 
     void insert_variable(std::string name, Value value) { m_stack.insert(name, value); }
 
-    Value get_variable(std::string name)
+    Value get_variable(std::string& name)
     {
         auto var = m_stack.lookup(name);
         if (var.has_value()) {
             return var.value();
         }
 
+        throw std::runtime_error("Variable not found: " + name);
+    }
+    void set_variable(std::string name, Value value) { return m_stack.set(name, value); }
+
+    Value get_env_variable(std::string& name)
+    {
         auto found = m_environment.find(name);
         if (found != m_environment.end()) {
             return found->second;
         }
 
-        throw std::runtime_error("Variable not found: " + name);
+        throw std::runtime_error("EnvVariable not found: " + name);
     }
-    void set_variable(std::string name, Value value) { return m_stack.set(name, value); }
 
     std::vector<std::unique_ptr<Statement>>& statements() { return m_program->statements(); }
 
@@ -163,6 +168,7 @@ private:
 
     Value eval(LiteralExpression& literal);
     Value eval(VariableExpression& expression);
+    Value eval(EnvVariableExpression& expression);
     Value eval(BinaryExpression& expression);
     Value eval(PrefixExpression& expression);
     Value eval(PostfixExpression& expression);
@@ -170,7 +176,10 @@ private:
 
     Value eval_call(FnStatement& fn, std::vector<Value>& args);
 
-    template <typename Arguments> Value eval_call(Object& obj, Arguments args) { return obj.call(args); }
+    template <typename Arguments> Value eval_call(Object& obj, Arguments args)
+    {
+        return obj.call(args);
+    }
 
     Context& m_context;
 };

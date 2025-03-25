@@ -8,6 +8,7 @@
 enum class TokenKind {
     Eof = 0, // end of file
     Identifier, // identifier
+    EnvVariable, // env variable
     Null, // null
     True, // true
     False, // false
@@ -101,6 +102,8 @@ private:
 
     Token make_token(TokenKind kind, std::string_view text);
     Token make_token(TokenKind kind, const char* start);
+
+    Token eat_env_variable();
 
     Token eat_identifier();
 

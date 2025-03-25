@@ -36,12 +36,15 @@ private:
 
     std::unique_ptr<Expression> parse_expression_precedence(Precedence precedence);
     std::unique_ptr<Expression> parse_prefix_expression();
-    std::unique_ptr<Expression> parse_postfix_expression(Token& token, std::unique_ptr<Expression> expr);
-    std::unique_ptr<Expression> parse_infix_expression(std::unique_ptr<Expression> expr, Precedence precedence);
+    std::unique_ptr<Expression> parse_postfix_expression(
+        Token& token, std::unique_ptr<Expression> expr);
+    std::unique_ptr<Expression> parse_infix_expression(
+        std::unique_ptr<Expression> expr, Precedence precedence);
     std::unique_ptr<Expression> parse_primary();
     std::string parse_identifier();
 
-    template <typename T> std::vector<T> parse_list(TokenKind end, TokenKind separator, std::function<T()> parse)
+    template <typename T>
+    std::vector<T> parse_list(TokenKind end, TokenKind separator, std::function<T()> parse)
     {
         std::vector<T> list;
 
@@ -60,7 +63,8 @@ private:
             }
 
             if (peek->kind != separator) {
-                throw std::runtime_error(std::format("Expected '{0}' or '{1}'", int(separator), int(end)));
+                throw std::runtime_error(
+                    std::format("Expected '{0}' or '{1}'", int(separator), int(end)));
             }
 
             next_token();
